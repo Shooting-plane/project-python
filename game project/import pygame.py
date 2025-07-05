@@ -6,7 +6,6 @@ from enemy import Enemy
 from bullet import Bullet
 from explosion import Explosion
 from utils import draw_hud
-# pyright: reportArgumentType=false
 
 pygame.init()
 pygame.mixer.init()
@@ -15,9 +14,6 @@ pygame.mixer.init()
 WIDTH, HEIGHT = 412, 915
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Bắn máy bay")
-#icon = pygame.image.load("assets/icon.png") # cần file icon.png 
-#icon = pygame.transform.scale(icon, (64, 64)) # Kích thước icon 
-#pygame.display.set_icon(icon) 
 clock = pygame.time.Clock()
 FPS = 60
 
@@ -33,19 +29,15 @@ explode_sound.set_volume(volume)
 shoot_sound = pygame.mixer.Sound("assets/shoot.wav")
 shoot_sound.set_volume(volume)
 
-# hiệu ứng nổ
-explosion_images = []  
-
-for i in range(1, 6):  
-    image_path = f"assets/explosion{i}.png"                    
-    original_image = pygame.image.load(image_path).convert_alpha()
-    resized_image = pygame.transform.scale(original_image, (80, 80)) 
-    explosion_images.append(resized_image)                        
-
+# Explosion images
+explosion_images = [
+    pygame.image.load(f"assets/explosion{i}.png").convert_alpha()
+    for i in range(1, 6)
+]
 
 # Font
-font = pygame.font.SysFont(" Segoe UI ", 24)
-big_font = pygame.font.SysFont(" Segoe UI ", 48)
+font = pygame.font.SysFont("Arial", 24)
+big_font = pygame.font.SysFont("Arial", 48)
 
 # Trạng thái game
 STATE_MENU = "menu"
@@ -60,7 +52,7 @@ level = 1
 last_shot_time = 0
 frame_count = 0
 
-# Nhóm đối tượng
+# Nhóm sprite
 player = Player()
 bullets = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
@@ -194,7 +186,7 @@ while running:
         keys = pygame.key.get_pressed()
         current_time = pygame.time.get_ticks()
         if keys[pygame.K_SPACE] and (current_time - last_shot_time >= level_data.shoot_cooldown):
-            bullets.add(player.shoot())
+            player.shoot(bullets)
             shoot_sound.play()
             last_shot_time = current_time
 
