@@ -4,14 +4,9 @@ from bullet import Bullet
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        #try:
-            # import file ảnh
-           #self.image = pygame.image.load("assets/player.png").convert_alpha()
-            #self.image = pygame.transform.scale(self.image, (50, 50))  # resize nếu cần
+        self.image = pygame.image.load("assets/player.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (50, 50))  # resize nếu cần
         
-            # đang dùng đỡ tạm thời
-        self.image = pygame.Surface((50, 50))
-        self.image.fill((0, 0, 255))  # Màu xanh dương
 
         # Thiết lập vị trí bắt đầu
         self.rect = self.image.get_rect(center=(206, 850))  # Gần cuối màn hình

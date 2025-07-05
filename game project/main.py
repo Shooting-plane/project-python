@@ -42,7 +42,10 @@ enemies = pygame.sprite.Group()
 
 frame_count = 0
 running = True
-shoot_cooldown = 300  # Thời gian hồi chiêu (ms)
+
+loaded_background = None  # nơi lưu ảnh nền của level hiện tại
+loaded_level_number = None  # để tránh load lại cùng 1 level nhiều lần
+
 last_shot_time = 0    # Thời điểm bắn lần cuối
 
 def load_level(level_num):
@@ -66,8 +69,21 @@ while running:
     # Tính toán level hiện tại và nạp dữ liệu
     level = score // 100 + 1
     level_data = load_level(level)
+    # Nếu level đổi, load ảnh mới
+    # Ưu tiên load background ảnh nếu có
+    if loaded_level_number != level:
+        loaded_background = None  # reset mỗi lần đổi level
+        if hasattr(level_data, "background_image_path") and level_data.background_image_path:
+            loaded_background = pygame.image.load(level_data.background_image_path).convert()
+            loaded_background = pygame.transform.scale(loaded_background, screen.get_size())
+        loaded_level_number = level
 
-    screen.fill(level_data.background_color)
+    # Hiển thị background (ảnh nếu có, không thì dùng màu)
+    if loaded_background:
+        screen.blit(loaded_background, (0, 0))  # Cách 1: dùng ảnh nền
+    else:
+        screen.fill(level_data.background_color)  # Cách 2: fallback dùng màu
+
     keys = pygame.key.get_pressed()
     current_time = pygame.time.get_ticks()  # Thời gian hiện tại (ms)
 
