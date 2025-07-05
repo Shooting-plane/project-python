@@ -1,6 +1,6 @@
 import pygame
 import random
-from main import HEIGHT
+
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, speed):
         super().__init__()
@@ -14,6 +14,6 @@ class Enemy(pygame.sprite.Sprite):
 
     def update(self):
         self.rect.y += self.speed
-        if self.rect.top > HEIGHT :
+        if self.rect.top > 915 :
             self.missed = True   
             self.kill()
