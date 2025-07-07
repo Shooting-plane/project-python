@@ -6,6 +6,7 @@ from enemy import Enemy
 from bullet import Bullet
 from explosion import Explosion
 from utils import draw_hud
+import socket
 # pyright: reportArgumentType=false
 
 pygame.init()
@@ -47,6 +48,13 @@ for i in range(1, 6):
 font = pygame.font.SysFont(" Segoe UI ", 24)
 big_font = pygame.font.SysFont(" Segoe UI ", 48)
 
+# Lấy IP address
+try:
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
+except:
+    ip_address = "Unknown"
+
 # Trạng thái game
 STATE_MENU = "menu"
 STATE_PLAYING = "playing"
@@ -56,9 +64,12 @@ game_state = STATE_MENU
 # Biến game
 score = 0
 player_health = 10
+max_health = 10
 level = 1
 last_shot_time = 0
 frame_count = 0
+health_flash_timer = 0
+HEALTH_FLASH_DURATION = 15  # frame
 
 # Nhóm đối tượng
 player = Player()
@@ -131,7 +142,29 @@ while running:
     elif game_state == STATE_GAMEOVER:
         show_gameover()
     elif game_state == STATE_PLAYING:
-        draw_hud(screen, score, player_health, level, font)
+        flash_health = health_flash_timer > 0
+        # Hiệu ứng rung màn hình
+        shake_offset = [0, 0]
+        if flash_health:
+            import random
+            shake_offset[0] = random.randint(-8, 8)
+            shake_offset[1] = random.randint(-8, 8)
+        # Vẽ background với offset
+        if loaded_background:
+            screen.blit(loaded_background, (shake_offset[0], shake_offset[1]))
+        else:
+            screen.fill(level_data.background_color)
+        # Vẽ các đối tượng với offset
+        player_rect_offset = player.rect.move(shake_offset)
+        draw_hud(screen, score, player_health, max_health, level, font, player_rect=player_rect_offset, flash_health=flash_health)
+        screen.blit(player.image, player_rect_offset)
+        for sprite in bullets:
+            screen.blit(sprite.image, sprite.rect.move(shake_offset))
+        for sprite in enemies:
+            screen.blit(sprite.image, sprite.rect.move(shake_offset))
+        for sprite in explosions:
+            screen.blit(sprite.image, sprite.rect.move(shake_offset))
+
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
             player.rect.x -= player.speed
@@ -149,11 +182,6 @@ while running:
         enemies.update()
         explosions.update()
 
-        screen.blit(player.image, player.rect)
-        bullets.draw(screen)
-        enemies.draw(screen)
-        explosions.draw(screen)
-
         frame_count += 1
         if frame_count >= level_data.enemy_spawn_rate:
             if len(enemies) < level_data.max_enemies:
@@ -168,9 +196,14 @@ while running:
 
         if pygame.sprite.spritecollideany(player, enemies):
             player_health -= 1
+            health_flash_timer = HEALTH_FLASH_DURATION
             pygame.sprite.spritecollide(player, enemies, True)
             if player_health <= 0:
                 game_state = STATE_GAMEOVER
+
+    # Update health flash timer
+    if health_flash_timer > 0:
+        health_flash_timer -= 1
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
