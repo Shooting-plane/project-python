@@ -7,6 +7,7 @@ from bullet import Bullet
 from explosion import Explosion
 from utils import draw_hud
 import socket
+from boss import Boss
 # pyright: reportArgumentType=false
 
 pygame.init()
@@ -92,6 +93,10 @@ sfx_muted = False
 GEAR_RECT = pygame.Rect(WIDTH-54, 10, 44, 44)
 GEAR_IMG = pygame.image.load("assets/gear.png").convert_alpha()
 GEAR_IMG = pygame.transform.smoothscale(GEAR_IMG, (44, 44))
+
+# Thêm biến toàn cục
+boss_group = pygame.sprite.Group()
+boss_spawned = False
 
 def load_level(level_num):
     try:
@@ -269,10 +274,27 @@ while running:
         explosions.update()
 
         frame_count += 1
-        if frame_count >= level_data.enemy_spawn_rate:
-            if len(enemies) < level_data.max_enemies:
-                enemies.add(Enemy(level_data.enemy_speed))
-            frame_count = 0
+        if level == 10:
+            if not boss_spawned:
+                boss = Boss()
+                boss_group.add(boss)
+                boss_spawned = True
+            boss_group.update()
+            for b in boss_group:
+                screen.blit(b.image, b.rect)
+            # Xử lý va chạm boss với đạn
+            hits = pygame.sprite.groupcollide(boss_group, bullets, False, True)
+            for b in hits:
+                b.health -= 10
+                if b.health <= 0:
+                    boss_group.remove(b)
+                    # Có thể chuyển trạng thái thắng hoặc tiếp tục game
+        else:
+            # logic sinh enemy thường như cũ
+            if frame_count >= level_data.enemy_spawn_rate:
+                if len(enemies) < level_data.max_enemies:
+                    enemies.add(Enemy(level_data.enemy_speed))
+                frame_count = 0
 
         hits = pygame.sprite.groupcollide(enemies, bullets, True, True)
         for hit in hits:
@@ -301,6 +323,10 @@ while running:
     if health_flash_timer > 0:
         health_flash_timer -= 1
 
+    if game_state == STATE_SETTING:
+        setting_items = show_setting(selected_setting_idx, mouse_pos)
+    else:
+        setting_items = []
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
