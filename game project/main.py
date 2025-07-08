@@ -59,6 +59,7 @@ except:
 STATE_MENU = "menu"
 STATE_PLAYING = "playing"
 STATE_GAMEOVER = "gameover"
+STATE_SETTING = "setting"  # Thêm trạng thái setting
 game_state = STATE_MENU
 
 # Biến game
@@ -80,6 +81,12 @@ explosions = pygame.sprite.Group()
 # Load level
 loaded_background = None
 loaded_level_number = None
+
+# Thêm biến lưu âm lượng hiệu ứng riêng
+music_volume = 0.5
+sfx_volume = 0.5
+music_muted = False
+sfx_muted = False
 
 def load_level(level_num):
     try:
@@ -119,8 +126,69 @@ def show_gameover():
     screen.blit(retry, (WIDTH // 2 - retry.get_width() // 2, HEIGHT // 2))
     screen.blit(esc, (WIDTH // 2 - esc.get_width() // 2, HEIGHT // 2 + 40))
 
+def draw_slider(surface, x, y, w, h, value, label, selected, mouse_on):
+    color_bg = (60, 60, 90) if not selected else (80, 120, 180)
+    color_bg = (120, 180, 255) if mouse_on else color_bg
+    pygame.draw.rect(surface, color_bg, (x, y, w, h), border_radius=12)
+    slider_w = int(w * 0.7)
+    slider_x = x + (w - slider_w)//2
+    slider_y = y + 32  # Đặt slider thấp hơn một chút
+    # Vẽ label căn giữa theo slider
+    text = font.render(f"{label}: {int(value*100)}%", True, (255,255,255))
+    text_x = slider_x + slider_w//2 - text.get_width()//2
+    text_y = y + 8
+    surface.blit(text, (text_x, text_y))
+    # Vẽ thanh trượt phía dưới label
+    pygame.draw.rect(surface, (220,220,220), (slider_x, slider_y, slider_w, 14), border_radius=7)
+    pygame.draw.rect(surface, (180,180,180), (slider_x, slider_y, slider_w, 14), 2, border_radius=7)
+    # Vẽ nút trượt
+    knob_x = slider_x + int(value * (slider_w-20))
+    pygame.draw.rect(surface, (255, 200, 0), (knob_x, slider_y-6, 20, 26), border_radius=10)
+    pygame.draw.rect(surface, (180, 140, 0), (knob_x, slider_y-6, 20, 26), 2, border_radius=10)
+
+def draw_button(surface, x, y, w, h, label, selected, mouse_on):
+    color_bg = (60, 60, 90) if not selected else (80, 120, 180)
+    color_bg = (120, 180, 255) if mouse_on else color_bg
+    pygame.draw.rect(surface, color_bg, (x, y, w, h), border_radius=10)
+    text = font.render(label, True, (255,255,255))
+    surface.blit(text, (x + w//2 - text.get_width()//2, y + h//2 - text.get_height()//2))
+
+def show_setting(selected_idx=0, mouse_pos=None):
+    screen.fill((30, 30, 50))
+    title = big_font.render("CÀI ĐẶT", True, (255, 255, 0))
+    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 5))
+    # Layout
+    box_w, box_h = 320, 56
+    start_y = HEIGHT//3
+    gap = 24
+    items = []
+    # Slider nhạc nền
+    items.append({'type':'slider', 'label':'Âm lượng nhạc nền', 'value':music_volume, 'rect':pygame.Rect(WIDTH//2-box_w//2, start_y, box_w, box_h)})
+    # Nút tắt/bật nhạc nền
+    items.append({'type':'button', 'label':f"Tắt/Bật nhạc nền: {'Tắt' if music_muted else 'Bật'}", 'rect':pygame.Rect(WIDTH//2-box_w//2, start_y+box_h+gap, box_w, box_h)})
+    # Slider hiệu ứng
+    items.append({'type':'slider', 'label':'Âm lượng hiệu ứng', 'value':sfx_volume, 'rect':pygame.Rect(WIDTH//2-box_w//2, start_y+2*(box_h+gap), box_w, box_h)})
+    # Nút tắt/bật hiệu ứng
+    items.append({'type':'button', 'label':f"Tắt/Bật hiệu ứng: {'Tắt' if sfx_muted else 'Bật'}", 'rect':pygame.Rect(WIDTH//2-box_w//2, start_y+3*(box_h+gap), box_w, box_h)})
+    # Nút chơi lại
+    items.append({'type':'button', 'label':'Chơi lại', 'rect':pygame.Rect(WIDTH//2-box_w//2, start_y+4*(box_h+gap), box_w, box_h)})
+    # Nút về menu
+    items.append({'type':'button', 'label':'Về màn hình chính', 'rect':pygame.Rect(WIDTH//2-box_w//2, start_y+5*(box_h+gap), box_w, box_h)})
+    # Vẽ các item
+    for i, item in enumerate(items):
+        mouse_on = mouse_pos and item['rect'].collidepoint(mouse_pos)
+        if item['type'] == 'slider':
+            x, y, w, h = item['rect']
+            draw_slider(screen, x, y, w, h, item['value'], item['label'], selected_idx==i, mouse_on)
+        else:
+            x, y, w, h = item['rect']
+            draw_button(screen, x, y, w, h, item['label'], selected_idx==i, mouse_on)
+    return items
+
 # Vòng lặp chính
 running = True
+selected_setting_idx = 0
+slider_drag = None  # (index, offset_x)
 while running:
     level = score // 100 + 1
     level_data = load_level(level)
@@ -137,10 +205,13 @@ while running:
     else:
         screen.fill(level_data.background_color)
 
+    mouse_pos = pygame.mouse.get_pos() if game_state == STATE_SETTING else None
     if game_state == STATE_MENU:
         show_menu()
     elif game_state == STATE_GAMEOVER:
         show_gameover()
+    elif game_state == STATE_SETTING:
+        setting_items = show_setting(selected_setting_idx, mouse_pos)
     elif game_state == STATE_PLAYING:
         flash_health = health_flash_timer > 0
         # Hiệu ứng rung màn hình
@@ -201,6 +272,10 @@ while running:
             if player_health <= 0:
                 game_state = STATE_GAMEOVER
 
+        # Vẽ nút bánh răng (setting) góc trên phải
+        gear = font.render("[S]etting", True, (200,200,200))
+        screen.blit(gear, (WIDTH-gear.get_width()-10, 10))
+
     # Update health flash timer
     if health_flash_timer > 0:
         health_flash_timer -= 1
@@ -208,6 +283,9 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        # Debug trạng thái game khi nhấn phím
+        if event.type == pygame.KEYDOWN:
+            print('DEBUG: game_state =', game_state, ', key =', event.key)
 
         if game_state == STATE_MENU and event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
@@ -223,13 +301,96 @@ while running:
             elif event.key == pygame.K_ESCAPE:
                 running = False
 
-    if game_state == STATE_PLAYING:
-        keys = pygame.key.get_pressed()
-        current_time = pygame.time.get_ticks()
-        if keys[pygame.K_SPACE] and (current_time - last_shot_time >= level_data.shoot_cooldown):
-            bullets.add(player.shoot())
-            shoot_sound.play()
-            last_shot_time = current_time
+        if game_state == STATE_PLAYING:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_s:
+                    game_state = STATE_SETTING
+            keys = pygame.key.get_pressed()
+            current_time = pygame.time.get_ticks()
+            if keys[pygame.K_SPACE] and (current_time - last_shot_time >= level_data.shoot_cooldown):
+                bullets.add(player.shoot())
+                shoot_sound.play()
+                last_shot_time = current_time
+
+        if game_state == STATE_SETTING:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    slider_drag = None
+                    game_state = STATE_PLAYING
+                elif event.key == pygame.K_UP:
+                    selected_setting_idx = (selected_setting_idx - 1) % 6
+                elif event.key == pygame.K_DOWN:
+                    selected_setting_idx = (selected_setting_idx + 1) % 6
+                elif selected_setting_idx == 0 and (event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT):
+                    # Chỉnh âm lượng nhạc nền
+                    delta = 0.05 if event.key == pygame.K_RIGHT else -0.05
+                    music_volume = min(max(music_volume + delta, 0), 1)
+                    if not music_muted:
+                        pygame.mixer.music.set_volume(music_volume)
+                elif selected_setting_idx == 1 and event.key == pygame.K_RETURN:
+                    # Tắt/bật nhạc nền
+                    music_muted = not music_muted
+                    pygame.mixer.music.set_volume(0 if music_muted else music_volume)
+                elif selected_setting_idx == 2 and (event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT):
+                    # Chỉnh âm lượng hiệu ứng
+                    delta = 0.05 if event.key == pygame.K_RIGHT else -0.05
+                    sfx_volume = min(max(sfx_volume + delta, 0), 1)
+                    if not sfx_muted:
+                        explode_sound.set_volume(sfx_volume)
+                        shoot_sound.set_volume(sfx_volume)
+                elif selected_setting_idx == 3 and event.key == pygame.K_RETURN:
+                    # Tắt/bật hiệu ứng
+                    sfx_muted = not sfx_muted
+                    explode_sound.set_volume(0 if sfx_muted else sfx_volume)
+                    shoot_sound.set_volume(0 if sfx_muted else sfx_volume)
+                elif selected_setting_idx == 4 and event.key == pygame.K_RETURN:
+                    # Chơi lại
+                    reset_game()
+                    game_state = STATE_PLAYING
+                elif selected_setting_idx == 5 and event.key == pygame.K_RETURN:
+                    # Về màn hình chính
+                    reset_game()
+                    game_state = STATE_MENU
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                for i, item in enumerate(setting_items):
+                    if item['rect'].collidepoint(event.pos):
+                        selected_setting_idx = i
+                        if item['type'] == 'slider':
+                            slider_drag = (i, event.pos[0] - item['rect'].x)
+                        elif i == 1:
+                            # Tắt/bật nhạc nền
+                            music_muted = not music_muted
+                            pygame.mixer.music.set_volume(0 if music_muted else music_volume)
+                        elif i == 3:
+                            # Tắt/bật hiệu ứng
+                            sfx_muted = not sfx_muted
+                            explode_sound.set_volume(0 if sfx_muted else sfx_volume)
+                            shoot_sound.set_volume(0 if sfx_muted else sfx_volume)
+                        elif i == 4:
+                            reset_game()
+                            game_state = STATE_PLAYING
+                        elif i == 5:
+                            reset_game()
+                            game_state = STATE_MENU
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                slider_drag = None
+            elif event.type == pygame.MOUSEMOTION and slider_drag:
+                idx, offset_x = slider_drag
+                item = setting_items[idx]
+                rel_x = event.pos[0] - item['rect'].x
+                slider_w = int(item['rect'].w * 0.7)
+                slider_x = item['rect'].x + (item['rect'].w - slider_w)//2
+                rel_slider = min(max(event.pos[0] - slider_x, 0), slider_w-20)
+                value = rel_slider / (slider_w-20)
+                if idx == 0:
+                    music_volume = value
+                    if not music_muted:
+                        pygame.mixer.music.set_volume(music_volume)
+                elif idx == 2:
+                    sfx_volume = value
+                    if not sfx_muted:
+                        explode_sound.set_volume(sfx_volume)
+                        shoot_sound.set_volume(sfx_volume)
 
     pygame.display.update()
     clock.tick(FPS)
