@@ -210,7 +210,12 @@ running = True
 selected_setting_idx = 0
 slider_drag = None  # (index, offset_x)
 while running:
-    level = score // 100 + 1
+    # Nếu đang ở level có boss (10, 20, 30) và boss còn sống, không tăng level
+    boss_levels = [10, 20, 30]
+    if loaded_level_number in boss_levels and len(boss_group) > 0:
+        level = loaded_level_number
+    else:
+        level = score // 100 + 1
     level_data = load_level(level)
 
     if loaded_level_number != level:
@@ -274,33 +279,66 @@ while running:
         explosions.update()
 
         frame_count += 1
-        if level == 10:
-            if not boss_spawned:
-                boss = Boss()
+        # Sinh boss ở các level đặc biệt
+        if level in boss_levels:
+            if len(boss_group) == 0:
+                if level == 10:
+                    boss = Boss()
+                elif level == 20:
+                    boss = Boss(image_path="assets/boss2.png", health=400, speed_x=3, speed_y=2, shot_cooldown=900, shoot_type="triple")
+                elif level == 30:
+                    boss = Boss(image_path="assets/boss3.png", health=700, speed_x=4, speed_y=2, shot_cooldown=600, shoot_type="circle")
                 boss_group.add(boss)
-                boss_spawned = True
             boss_group.update()
             for b in boss_group:
-                screen.blit(b.image, b.rect)
-            # Xử lý va chạm boss với đạn
-            hits = pygame.sprite.groupcollide(boss_group, bullets, False, True)
-            for b in hits:
-                b.health -= 10
+                b.draw(screen)
+                # Vẽ và cập nhật đạn boss
+                b.bullets.update()
+                b.bullets.draw(screen)
+                # Va chạm đạn boss với player
+                if pygame.sprite.spritecollideany(player, b.bullets):
+                    player_health -= 1
+                    health_flash_timer = HEALTH_FLASH_DURATION
+                    for bullet in b.bullets:
+                        if player.rect.colliderect(bullet.rect):
+                            bullet.kill()
+                    if player_health <= 0:
+                        game_state = STATE_GAMEOVER
+                # Boss triệu hồi enemy nhỏ
+                if hasattr(b, 'spawn_enemy') and b.spawn_enemy and b.health > 0:
+                    if len(enemies) < level_data.max_enemies:
+                        enemies.add(Enemy(level_data.enemy_speed))
+                    b.spawn_enemy = False
+                # Xử lý va chạm boss với đạn (chỉ với đạn còn sống, chỉ xử lý 1 lần duy nhất)
+                boss_hits = pygame.sprite.spritecollide(b, bullets, False)
+                for bullet in boss_hits:
+                    b.take_damage(10)
+                    bullet.kill()
                 if b.health <= 0:
                     boss_group.remove(b)
-                    # Có thể chuyển trạng thái thắng hoặc tiếp tục game
-        else:
-            # logic sinh enemy thường như cũ
-            if frame_count >= level_data.enemy_spawn_rate:
-                if len(enemies) < level_data.max_enemies:
-                    enemies.add(Enemy(level_data.enemy_speed))
-                frame_count = 0
-
+        # Chỉ sinh enemy nhỏ khi không có boss
+        if (level not in boss_levels or len(boss_group) == 0) and frame_count >= level_data.enemy_spawn_rate:
+            if len(enemies) < level_data.max_enemies:
+                enemies.add(Enemy(level_data.enemy_speed))
+            frame_count = 0
+        # Xử lý va chạm enemy với đạn (ưu tiên enemy trước)
         hits = pygame.sprite.groupcollide(enemies, bullets, True, True)
+        bullets_alive = [b for b in bullets]
         for hit in hits:
             score += 10
             explosions.add(Explosion(hit.rect.center, explosion_images))
             explode_sound.play()
+        # Xử lý va chạm boss với đạn (chỉ với đạn còn sống)
+        # (Đã xử lý ở trên, nên xóa đoạn này để tránh trừ máu 2 lần)
+        # if level == 2:
+        #     for b in boss_group:
+        #         boss_hits = pygame.sprite.spritecollide(b, bullets, False)
+        #         for bullet in boss_hits:
+        #             if bullet in bullets_alive:
+        #                 b.take_damage(10)
+        #                 bullet.kill()
+        #         if b.health <= 0:
+        #             boss_group.remove(b)
 
         if pygame.sprite.spritecollideany(player, enemies):
             player_health -= 1
