@@ -3,7 +3,7 @@ import random
 from enemy import Enemy
 
 class Boss(pygame.sprite.Sprite):
-    def __init__(self, image_path="assets/boss.png", health=200, speed_x=2, speed_y=1, shot_cooldown=1200, shoot_type="single"):
+    def __init__(self, image_path="game project/assets/boss.png", health=200, speed_x=2, speed_y=1, shot_cooldown=1200, shoot_type="single"):
         super().__init__()
         self.image_path = image_path
         self.image = pygame.image.load(self.image_path).convert_alpha()

@@ -14,7 +14,7 @@ pygame.init()
 pygame.mixer.init()
 
 # Cấu hình màn hình
-WIDTH, HEIGHT = 412, 915
+WIDTH, HEIGHT = 412, 700
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Bắn máy bay")
 #icon = pygame.image.load("assets/icon.png") # cần file icon.png 
@@ -25,21 +25,21 @@ FPS = 60
 
 # Âm thanh
 volume = 0.5
-pygame.mixer.music.load("assets/background.mp3")
+pygame.mixer.music.load("game project/assets/background.mp3")
 pygame.mixer.music.set_volume(volume)
 pygame.mixer.music.play(-1)
 
-explode_sound = pygame.mixer.Sound("assets/explode.wav")
+explode_sound = pygame.mixer.Sound("game project/assets/explode.wav")
 explode_sound.set_volume(volume)
 
-shoot_sound = pygame.mixer.Sound("assets/shoot.wav")
+shoot_sound = pygame.mixer.Sound("game project/assets/shoot.wav")
 shoot_sound.set_volume(volume)
 
 # hiệu ứng nổ
 explosion_images = []  
 
 for i in range(1, 6):  
-    image_path = f"assets/explosion{i}.png"                    
+    image_path = f"game project/assets/explosion{i}.png"                    
     original_image = pygame.image.load(image_path).convert_alpha()
     resized_image = pygame.transform.scale(original_image, (80, 80)) 
     explosion_images.append(resized_image)                        
@@ -65,7 +65,7 @@ game_state = STATE_MENU
 
 # Biến game
 score = 0
-player_health = 10
+player_health = 1000
 max_health = 10
 level = 1
 last_shot_time = 0
@@ -91,7 +91,7 @@ sfx_muted = False
 
 # Thêm biến toàn cục cho vùng bánh răng
 GEAR_RECT = pygame.Rect(WIDTH-54, 10, 44, 44)
-GEAR_IMG = pygame.image.load("assets/gear.png").convert_alpha()
+GEAR_IMG = pygame.image.load("game project/assets/gear.png").convert_alpha()
 GEAR_IMG = pygame.transform.smoothscale(GEAR_IMG, (44, 44))
 
 # Thêm biến toàn cục
@@ -150,6 +150,7 @@ def draw_slider(surface, x, y, w, h, value, label, selected, mouse_on):
     text_x = slider_x + slider_w//2 - text.get_width()//2
     text_y = y + 8
     surface.blit(text, (text_x, text_y))
+
     # Vẽ icon loa nhỏ đầu thanh
     icon_center = (slider_x-24, slider_y+slider_h//2)
     pygame.draw.circle(surface, (200,200,200), icon_center, 10)
@@ -285,9 +286,9 @@ while running:
                 if level == 10:
                     boss = Boss()
                 elif level == 20:
-                    boss = Boss(image_path="assets/boss2.png", health=400, speed_x=3, speed_y=2, shot_cooldown=900, shoot_type="triple")
+                    boss = Boss(image_path="game project/assets/boss2.png", health=400, speed_x=3, speed_y=2, shot_cooldown=900, shoot_type="triple")
                 elif level == 30:
-                    boss = Boss(image_path="assets/boss3.png", health=700, speed_x=4, speed_y=2, shot_cooldown=600, shoot_type="circle")
+                    boss = Boss(image_path="game project/assets/boss3.png", health=700, speed_x=4, speed_y=2, shot_cooldown=600, shoot_type="circle")
                 boss_group.add(boss)
             boss_group.update()
             for b in boss_group:
@@ -312,7 +313,7 @@ while running:
                 # Xử lý va chạm boss với đạn (chỉ với đạn còn sống, chỉ xử lý 1 lần duy nhất)
                 boss_hits = pygame.sprite.spritecollide(b, bullets, False)
                 for bullet in boss_hits:
-                    b.take_damage(10)
+                    b.take_damage(bullet.damage)
                     bullet.kill()
                 if b.health <= 0:
                     boss_group.remove(b)
