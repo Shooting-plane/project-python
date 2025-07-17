@@ -20,10 +20,10 @@ clock = pygame.time.Clock()
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((SERVER_IP, PORT))
 player_id = client.recv(1024).decode()
-print(f"🔵 Tôi là Player {player_id}")
+print(f"Tôi là Player {player_id}")
 
 # Tạo đối tượng player điều khiển chính
-img_path = "assets/player.png"
+img_path = "game project/assets/player.png"
 my_player = Player(img_path, 100, HEIGHT // 2)
 
 game_state = {}
