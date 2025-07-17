@@ -5,7 +5,7 @@ class Bullet(pygame.sprite.Sprite):
         super().__init__()
 
         # Dùng ảnh
-        self.image = pygame.image.load("assets/bullet.png").convert_alpha()
+        self.image = pygame.image.load("game project/assets/bullet.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (20, 40))  # resize nếu cần
         
 

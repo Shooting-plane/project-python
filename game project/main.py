@@ -6,7 +6,6 @@ from enemy import Enemy
 from bullet import Bullet
 from explosion import Explosion
 from utils import draw_hud
-import socket
 from boss import Boss
 # pyright: reportArgumentType=false
 
@@ -25,36 +24,29 @@ FPS = 60
 
 # Âm thanh
 volume = 0.5
-pygame.mixer.music.load("assets/background.mp3")
+pygame.mixer.music.load("game project/assets/background.mp3")
 pygame.mixer.music.set_volume(volume)
 pygame.mixer.music.play(-1)
 
-explode_sound = pygame.mixer.Sound("assets/explode.wav")
+explode_sound = pygame.mixer.Sound("game project/assets/explode.wav")
 explode_sound.set_volume(volume)
 
-shoot_sound = pygame.mixer.Sound("assets/shoot.wav")
+shoot_sound = pygame.mixer.Sound("game project/assets/shoot.wav")
 shoot_sound.set_volume(volume)
 
 # hiệu ứng nổ
 explosion_images = []  
 
 for i in range(1, 6):  
-    image_path = f"assets/explosion{i}.png"                    
+    image_path = f"game project/assets/explosion{i}.png"                    
     original_image = pygame.image.load(image_path).convert_alpha()
     resized_image = pygame.transform.scale(original_image, (80, 80)) 
     explosion_images.append(resized_image)                        
 
 
 # Font
-font = pygame.font.SysFont(" Segoe UI ", 24)
-big_font = pygame.font.SysFont(" Segoe UI ", 48)
-
-# Lấy IP address
-try:
-    hostname = socket.gethostname()
-    ip_address = socket.gethostbyname(hostname)
-except:
-    ip_address = "Unknown"
+font = pygame.font.SysFont("Segoe UI", 24)
+big_font = pygame.font.SysFont("Segoe UI", 48)
 
 # Trạng thái game
 STATE_MENU = "menu"
@@ -74,7 +66,7 @@ health_flash_timer = 0
 HEALTH_FLASH_DURATION = 15  # frame
 
 # Nhóm đối tượng
-player = Player()
+player = Player("game project/assets/player.png", 206, 850)
 bullets = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
 explosions = pygame.sprite.Group()
@@ -91,7 +83,7 @@ sfx_muted = False
 
 # Thêm biến toàn cục cho vùng bánh răng
 GEAR_RECT = pygame.Rect(WIDTH-54, 10, 44, 44)
-GEAR_IMG = pygame.image.load("assets/gear.png").convert_alpha()
+GEAR_IMG = pygame.image.load("game project/assets/gear.png").convert_alpha()
 GEAR_IMG = pygame.transform.smoothscale(GEAR_IMG, (44, 44))
 
 # Thêm biến toàn cục
@@ -113,7 +105,8 @@ def reset_game():
     last_shot_time = 0
     loaded_background = None
     loaded_level_number = None
-    player = Player()
+    
+    player = Player("game project/assets/player.png", 206, 850)
     bullets.empty()
     enemies.empty()
     explosions.empty()
